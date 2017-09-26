@@ -584,7 +584,7 @@ function formatSource() {
         //alert( JSON.stringify(res) );
         handleProblem( res.stderr );
     } else {
-        txtSourceBuffer.SetText( res.code );
+        txtSourceBuffer.SetText( res.code + "\n\n\n" );
     };
 };
 
