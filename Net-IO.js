@@ -173,14 +173,14 @@ function handleProblem( message, problem ) {
         return line != "";
     }).map(function(line) {
         return line.replace(/  /g, '\u00a0\u00a0');
-    }).join("<br>\n<p>");
+    }).join("<br>");
 
     // Get all of the row:col in the message.
     var errorLines = lines.filter(function(line) {
         return line.indexOf("--> <anon>") !== -1;
     }).map(function(line) {
         var lineIndex = line.indexOf(":");
-        if (lineIndex !== -1) {
+        if (!~lineIndex) {
             return line.slice(lineIndex);
         };
 
@@ -225,7 +225,7 @@ function parseProblems( lines ) {
 function displayOutput( message, program ) {
     var gistUrl = getGist( program );
     bodyScroll.ScrollTo( 0, bodyHeight );
-    txtOutputBuffer.SetHtml( message +"<br>============================<br>" + gistUrl );
+    txtOutputBuffer.SetHtml( message +"<br>============================<br>" + gistUrl + "<br><br><br>");
 };
 
 function getGist( program ) {
