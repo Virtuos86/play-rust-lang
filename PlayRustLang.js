@@ -188,23 +188,27 @@ function CreateActionBar() {
 
 function CreateBody() {
     bodyHeight = 0.925;
+    layBody = app.CreateTabs("Input,Output", 1, bodyHeight);
+    layMain.AddChild( layBody );
+    layBody.SetPosition( 0, 0.075, 1, bodyHeight );
+    layBody.SetBackColor( "#ffffff" );
+
+    //edtScroll = app.CreateScroller( 1, bodyHeight );
+    //layBody.AddChild( edtScroll );
+
+    input = layBody.GetLayout("Input");
     bodyScroll = app.CreateScroller( 1, bodyHeight );
-    layMain.AddChild( bodyScroll );
-    bodyScroll.SetPosition( 0, 0.075, 1, bodyHeight );
-    bodyScroll.SetBackColor( "#bbbbbb" );
-	layBody = app.CreateLayout( "Absolute", "FillXY" );
-	bodyScroll.AddChild( layBody );
+    input.AddChild( bodyScroll );
+    //bodyScroll.SetPosition( 0, 0, 1, bodyHeight );
 
-    edtScroll = app.CreateScroller( 1, bodyHeight );
-    layBody.AddChild( edtScroll );
-
-    laySourceBuffer = app.CreateLayout( "Linear", "Horizontal,FillXY" );
-    edtScroll.AddChild( laySourceBuffer );
-    laySourceBuffer.SetPosition( 0, 0, 1, bodyHeight );
+    laySourceBuffer = app.CreateLayout( "Linear", 1, 1, "Horizontal,FillXY" );
+    //edtScroll.AddChild( bodyScroll );
+    bodyScroll.AddChild( laySourceBuffer );
+    //laySourceBuffer.SetPosition( 0, 0, 1, bodyHeight );
     laySourceBuffer.SetBackColor( "#dddddd" );
     //laySourceBuffer.SetPadding( 0.01, 0.01, 0.01, 0.01 );
     
-    txtNumPane = app.CreateText( "", 0, bodyHeight, "Monospace,Multiline" );
+    /*txtNumPane = app.CreateText( "", 0, bodyHeight, "Monospace,Multiline" );
     laySourceBuffer.AddChild( txtNumPane );
     txtNumPane.SetTextSize( 25, "px" );
     txtNumPane.SetBackColor( "#dddddd" );
@@ -213,8 +217,8 @@ function CreateBody() {
     laySourceBuffer.AddChild( sep );
     sep.SetSize( 1, -1, "px" );
     sep.SetColor( "#cc0000" );
-
-    txtSourceBuffer = app.CreateTextEdit( "", 1, bodyHeight, "Monospace" );
+*/
+    txtSourceBuffer = app.CreateTextEdit( "", 1, -1, "Monospace" );
     laySourceBuffer.AddChild( txtSourceBuffer );
     txtSourceBuffer.SetHint( "Type here!" );
     txtSourceBuffer.GetLineCount = function() {
@@ -228,14 +232,19 @@ function CreateBody() {
     txtSourceBuffer.SetTextSize( 25, "px" );
     txtSourceBuffer.SetTextColor( "#aa0000" );
 
-    layOutputBuffer = app.CreateLayout( "Linear", "FillXY" );
-    layBody.AddChild( layOutputBuffer );
-    layOutputBuffer.SetPosition( 0, bodyHeight, 1, bodyHeight );
-    txtOutputBuffer = app.CreateTextEdit( "See an output here!", 1, 1, "Monospace,Multiline,Html,Left" );
+    output = layBody.GetLayout("Output");
+    outputScroll = app.CreateScroller( 1, bodyHeight );
+    output.AddChild( outputScroll );
+    //outputScroll.SetPosition( 0, bodyHeight, 1, bodyHeight );
+    layOutputBuffer = app.CreateLayout( "Linear", 1, -1, "FillXY" );
+    outputScroll.AddChild( layOutputBuffer );
+    //layOutputBuffer.SetPosition( 0, bodyHeight, 1, bodyHeight );
+    txtOutputBuffer = app.CreateTextEdit( "See an output here!", 1, -1, "Monospace,Multiline,Html,Left" );
     layOutputBuffer.AddChild( txtOutputBuffer );
     //txtOutputBuffer.SetFontFile( "Misc/UbuntuMono-B.ttf" )
     txtOutputBuffer.SetTextSize( 20 );
-    txtOutputBuffer.SetBackColor( "#ddaaaa" );
+    txtOutputBuffer.SetBackColor( "ffffff" );
+    txtOutputBuffer.SetTextColor( "#000000" );
     if( settings.last ) {
         newFileDlg( curFile );
     };
@@ -293,7 +302,7 @@ function CreateDrawer() {
 	layDrawer.SetOnTouchDown( function () {app.CloseDrawer( "Left" );} );
 
 	layDrawerTop = app.CreateLayout( "Linear", "Left" );
-	layDrawerTop.SetBackground( "Img/picture.png" );
+	layDrawerTop.SetBackground( "Img/PlayRustLang.png" );
 	layDrawerTop.SetSize( drawerWidth );
 	layDrawer.AddChild( layDrawerTop );
 
@@ -302,8 +311,7 @@ function CreateDrawer() {
 	txtName.SetTextColor( "#ffffff" );
 	txtName.SetTextSize( 17 );
 	layDrawer.AddChild( txtName );
-	
-	var layMenu = app.CreateLayout( "Linear", "Left" );
+		var layMenu = app.CreateLayout( "Linear", "Left" );
 	layDrawer.AddChild( layMenu );
 	
     //Add a list to menu layout (with the menu style option).
@@ -378,6 +386,9 @@ function newFileDlg( title, body, type, index ) {
     txtBarTitle.SetText( title );
     var file = APP_PATH + "/" + title;
     var source = app.ReadFile( file );
+    if( source.slice(-3) !== "\n\n\n" ) {
+        source += "\n\n\n";
+    }
     txtSourceBuffer.SetText( source );
     app.CloseDrawer( "Left" );
     settings.last = title;
