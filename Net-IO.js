@@ -14,9 +14,10 @@ const SUCCESS = 0;
 const ERROR = 1 + SUCCESS;
 const WARNING = 1 + ERROR;
 
-const PREFIX = "http://play.integer32.com";
-const EXECUTE_URL = "http://play.integer32.com/execute";
-const FORMAT_URL = "http://play.integer32.com/format";
+const PREFIX1 = "https://play.integer32.com";
+const PREFIX2 = "https://play.rust-lang.org";
+const EXECUTE_URL = PREFIX1 + "/execute";
+const FORMAT_URL = PREFIX1 + "/format";
 const GIST_URL = "https://api.github.com/gists";
 
 // Regex for finding new lines
@@ -33,11 +34,11 @@ function escapeHTML(unsafe) {// return unsafe;
 };
 
 const exec_request = {
-    "channel":   "stable", 
-    "mode":      "debug",
+    "channel":   "stable",
+    "code":       "",
     "crateType": "bin",
-    "tests":      false,
-    "code":       ""
+    "mode":      "debug",
+    "tests":      false
 };
 
 /* API:
@@ -68,40 +69,48 @@ function execute( program, callback ) {
     data.channel = settings.channel;
     data.code = program;
     data = JSON.stringify(data);
-    //alert(data);
     req.timeout = 30000;
 
-    console.log("Sending", data);
+    console.log("Sending", json(data));
     req.open('POST', EXECUTE_URL, true );
-    req.setRequestHeader( "Access-Control-Allow-Origin", '"*"' );
-    req.setRequestHeader( "Access-Control-Allow-Headers", '"origin,x-requested-with,content-type"' );
-    //req.setRequestHeader( "Origin", "https://play.rust-lang.org" );
-    //req.setRequestHeader( "Referer", "https://play.rust-lang.org/?code=" + encodeURIComponent( data ) + "&version=stable&backtrace=0" );
+    req.setRequestHeader( "Access-Control-Allow-Origin", "*" );
+    req.setRequestHeader( "Access-Control-Allow-Headers", "origin,x-requested-with,content-type=application/json" );
     req.onload = function(e) {
         var statusCode = false;
         var result = null;
-        if (req.readyState === 4 && req.status === 200) {
-            result = JSON.parse(req.response);
-            //alert(JSON.stringify(result));
-            // handle application errors from playpen
-            if( !result.success ) {
-                statusCode = ERROR;
-                result = 'Playpen Error: ' + result.stderr;
-            } else {
-                statusCode = SUCCESS;
-
-                // handle rustc errors/warnings
-                // Need server support to get an accurate version of this.
-                if (result.stderr.indexOf("error:") !== -1) {
+        if (req.readyState === 4) {
+            if (req.status === 200) {
+                try {
+                    result = JSON.parse(req.response);
+                } catch(e) {
+                    alert("Non-JSON response: " + json(e));
+                    return;
+                }
+                //alert(json(result));
+                // handle application errors from playpen
+                if( !result.success ) {
                     statusCode = ERROR;
-                } else if (result.stderr.indexOf("warning:") !== -1) {
-                    statusCode = WARNING;
-                };
+                    result = 'Playpen Error: ' + result.stderr;
+                } else {
+                    statusCode = SUCCESS;
+
+                    // handle rustc errors/warnings
+                    // Need server support to get an accurate version of this.
+                    if (result.stderr.indexOf("error:") !== -1) {
+                        statusCode = ERROR;
+                    } else if (result.stderr.indexOf("warning:") !== -1) {
+                        statusCode = WARNING;
+                    };
                 
-                result = result.stdout;
+                    result = result.stdout;
+                };
+            } else {
+                result = req.response;
+                //alert(req.status + "\n" + result);
             };
         } else {
             result = req.response;
+            alert("Ошибка во время запроса:\n" + result);
         };
 
         callback(statusCode, result);
@@ -118,12 +127,12 @@ function execute( program, callback ) {
         callback(statusCode, result);
     };
 
-    req.setRequestHeader( "Content-Type", "application/json" );
+    req.setRequestHeader( "content-type", "application/json" );
     req.send( data );
 };
 
 // The callback to execute
-function handleResult( statusCode, message ) {//alert("result: "+statusCode);
+function handleResult( statusCode, message ) {//alert("result: "+statusCode+message);
     // Dispatch depending on result type
     if (message == null) {
         clearResultDiv();
@@ -255,9 +264,9 @@ function getGist( program ) {
         };
     };
     try {
-        request.send( JSON.stringify( data ) );
+        request.send( json( data ) );
         var res = JSON.parse( request.response );
-        res = ( "<br>Permalink to the playground:<br>    " + PREFIX + "/?gist=" + res.id
+        res = ( "<br>Permalink to the playground:<br>    " + PREFIX1 + "/?gist=" + res.id
               + "&version=" + settings.version );
         return res;
     } catch (e) {
@@ -267,7 +276,7 @@ function getGist( program ) {
 };
 
 function format( source, version, optimize ) {
-    var res = send( {"code": source} );
+    var res = send( { code: source } );
     return res;
 };
 
@@ -280,7 +289,7 @@ function send( data ) {
             var json;
             try {
                 json = JSON.parse( request.response );
-            } catch (e) {
+            } catch (e) {//alert(e);
                 console.log( "JSON.parse(): " + e );
             };
 
@@ -299,8 +308,8 @@ function send( data ) {
     //request.ontimeout = function() {
     //    app.ShowPopup( "Connection timed out.\nAre you connected to the Internet?" );
     //};
-    try {//alert(JSON.stringify( data ) + typeof data);
-        request.send( JSON.stringify( data ) );
+    try {//alert(json( data ) + typeof data);
+        request.send( json( data ) );
         var res = JSON.parse( request.response );
         return res;
     } catch (e) {
@@ -308,3 +317,4 @@ function send( data ) {
         return data.code;
     };
 };
+
