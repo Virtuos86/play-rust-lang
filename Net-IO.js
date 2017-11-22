@@ -14,9 +14,10 @@ const SUCCESS = 0;
 const ERROR = 1 + SUCCESS;
 const WARNING = 1 + ERROR;
 
-const PREFIX = "http://play.integer32.com";
-const EXECUTE_URL = "http://play.integer32.com/execute";
-const FORMAT_URL = "http://play.integer32.com/format";
+const PREFIX1 = "https://play.integer32.com";
+const PREFIX2 = "https://play.rust-lang.org";
+const EXECUTE_POSTFIX = "/execute";
+const FORMAT_POSTFIX = "/format";
 const GIST_URL = "https://api.github.com/gists";
 
 // Regex for finding new lines
@@ -33,11 +34,11 @@ function escapeHTML(unsafe) {// return unsafe;
 };
 
 const exec_request = {
-    "channel":   "stable", 
-    "mode":      "debug",
+    "channel":   "stable",
+    "code":       "",
     "crateType": "bin",
-    "tests":      false,
-    "code":       ""
+    "mode":      "debug",
+    "tests":      false
 };
 
 /* API:
@@ -61,69 +62,42 @@ const gist_request = {
 function clearResultDiv() {
 };
 
+function processRes(err, res, callback) {
+    //alert(res);
+    if(err) {
+        alert(`Error: {res}`);
+        return;
+    };
+    var result = JSON.parse(res);
+    // handle application errors from playpen
+    if( !result.success ) {
+        statusCode = ERROR;
+        result = 'Playpen Error: ' + result.stderr;
+    } else {
+        statusCode = SUCCESS;
+        // handle rustc errors/warnings
+        // Neeg.d server support to get an accurate version of this.
+        if (result.stderr.indexOf("error:") !== -1) {
+            statusCode = ERROR;
+        } else if (result.stderr.indexOf("warning:") !== -1) {
+            statusCode = WARNING;
+        };
+        result = result.stdout;
+    };
+    callback(statusCode, result);
+}
+
 function execute( program, callback ) {
-    var req = new XMLHttpRequest();
     var data =  new Object(exec_request);
     data.mode = settings.mode;
     data.channel = settings.channel;
     data.code = program;
     data = JSON.stringify(data);
-    //alert(data);
-    req.timeout = 30000;
-
-    console.log("Sending", data);
-    req.open('POST', EXECUTE_URL, true );
-    req.setRequestHeader( "Access-Control-Allow-Origin", '"*"' );
-    req.setRequestHeader( "Access-Control-Allow-Headers", '"origin,x-requested-with,content-type"' );
-    //req.setRequestHeader( "Origin", "https://play.rust-lang.org" );
-    //req.setRequestHeader( "Referer", "https://play.rust-lang.org/?code=" + encodeURIComponent( data ) + "&version=stable&backtrace=0" );
-    req.onload = function(e) {
-        var statusCode = false;
-        var result = null;
-        if (req.readyState === 4 && req.status === 200) {
-            result = JSON.parse(req.response);
-            //alert(JSON.stringify(result));
-            // handle application errors from playpen
-            if( !result.success ) {
-                statusCode = ERROR;
-                result = 'Playpen Error: ' + result.stderr;
-            } else {
-                statusCode = SUCCESS;
-
-                // handle rustc errors/warnings
-                // Need server support to get an accurate version of this.
-                if (result.stderr.indexOf("error:") !== -1) {
-                    statusCode = ERROR;
-                } else if (result.stderr.indexOf("warning:") !== -1) {
-                    statusCode = WARNING;
-                };
-                
-                result = result.stdout;
-            };
-        } else {
-            result = req.response;
-        };
-
-        callback(statusCode, result);
-    };
-
-    req.onerror = function(e) {
-        callback(false, null);
-    };
-
-    req.ontimeout = function(e) {
-        var statusCode = ERROR;
-        var result = "play.rust-lang.org not responding, please check back later";
-
-        callback(statusCode, result);
-    };
-
-    req.setRequestHeader( "Content-Type", "application/json" );
-    req.send( data );
-};
+    app.HttpRequest( "json", settings.host_url, EXECUTE_POSTFIX, data, (err, res) => { processRes(err, res, callback) }, "content-type=application/json;charset=utf-8");
+}
 
 // The callback to execute
-function handleResult( statusCode, message ) {//alert("result: "+statusCode);
+function handleResult( statusCode, message ) {//alert("result: "+statusCode+message);
     // Dispatch depending on result type
     if (message == null) {
         clearResultDiv();
@@ -255,56 +229,35 @@ function getGist( program ) {
         };
     };
     try {
-        request.send( JSON.stringify( data ) );
+        request.send( json( data ) );
         var res = JSON.parse( request.response );
-        res = ( "<br>Permalink to the playground:<br>    " + PREFIX + "/?gist=" + res.id
+        res = ( "<br>Permalink to the playground:<br>    " + PREFIX1 + "/?gist=" + res.id
               + "&version=" + settings.version );
         return res;
     } catch (e) {
         app.ShowPopup( e );
         return data.code;
     };
-};
+}
 
-function format( source, version, optimize ) {
-    var res = send( {"code": source} );
-    return res;
-};
+function format( source, callback, version, optimize ) {
+    send( { code: source }, callback );
+}
 
-function send( data ) {
-    var request = new XMLHttpRequest();
-    request.open( "POST", FORMAT_URL, false );
-    request.setRequestHeader( "Content-Type", "application/json" );
-    request.onreadystatechange = function() {
-        if( request.readyState == 4 ) {
-            var json;
-            try {
-                json = JSON.parse( request.response );
-            } catch (e) {
-                console.log( "JSON.parse(): " + e );
+function send( data, callback ) {
+    var data = JSON.stringify(data);
+    app.HttpRequest(
+        "json",
+        settings.host_url,
+        FORMAT_POSTFIX,
+        data,
+        function(err, res) {
+            if(err) {
+                alert(`Error: {res}`);
+                return;
             };
-
-            if( request.status == 200 ) {
-                return json;
-            } else if( request.status === 0 ) {
-                app.ShowPopup( "Connection failure.\nAre you connected to the Internet?" );
-            } else {
-                app.ShowPopup( "Something went wrong.\nThe HTTP request produced a response with status code " + request.status + ".");
-            };
-        } else {
-            
-        };
-    };
-    //request.timeout = 10000;
-    //request.ontimeout = function() {
-    //    app.ShowPopup( "Connection timed out.\nAre you connected to the Internet?" );
-    //};
-    try {//alert(JSON.stringify( data ) + typeof data);
-        request.send( JSON.stringify( data ) );
-        var res = JSON.parse( request.response );
-        return res;
-    } catch (e) {
-        app.ShowPopup( e );
-        return data.code;
-    };
-};
+            var res = JSON.parse(res);
+            callback(res);
+        },
+        "content-type=application/json;charset=utf-8");
+}

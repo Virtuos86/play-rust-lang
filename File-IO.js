@@ -9,7 +9,8 @@ const DEFAULT_SETTINGS = {
     "version": "beta",
     "optimize": 0,
     "mode": "debug",
-    "channel": "stable"
+    "channel": "stable",
+    "host_url": "https://play.integer32.com/"
 };
 
 var SETTINGS_PATH;
@@ -27,14 +28,15 @@ function loadSettings () {
 	if( !app.FileExists( SETTINGS_PATH ) ) {
 		 app.WriteFile(
             SETTINGS_PATH,
-            JSON.stringify( DEFAULT_SETTINGS )
+            json( DEFAULT_SETTINGS )
         );
 	};
     var settings = JSON.parse( app.ReadFile( SETTINGS_PATH ) );
+    if(typeof settings.host_url === "undefined") settings.host_url = DEFAULT_SETTINGS.host_url;
     return settings;
 };
 
 function storeSettings () {
-    var s = JSON.parse( JSON.stringify( settings ) );
-    app.WriteFile( SETTINGS_PATH, JSON.stringify( s, null, 4 ) );
+    var s = JSON.parse( json( settings ) );
+    app.WriteFile( SETTINGS_PATH, json( s ) );
 };

@@ -2,6 +2,7 @@
 
 //app.LoadPlugin( "UIExtras" );
 
+app.LoadScript( "tabs.js" );
 app.LoadScript( "File-IO.js" );
 app.LoadScript( "Net-IO.js" );
 
@@ -9,6 +10,10 @@ const APP_NAME = "PlayRustLang";
 var APP_PATH = "/sdcard/" + APP_NAME;
 
 var curFile;
+
+function json(obj) {
+    return JSON.stringify(obj, null, 2);
+}
 
 function isValidFileName( str ) {
     return !/[/`!#$%\^&*+=\[\]\\';,/{}|\\":<>\?]/g.test( str ) && str!=APP_NAME;
@@ -38,17 +43,16 @@ function OnStart() {
     //layFab.AddChild( btnRun );
 
     CreateActionBar();
-	CreateBody();
-	CreateDrawer();
+	  CreateBody();
+	  CreateDrawer();
     ShowFiles();
-	CreateUtilsDrawer();
+    CreateUtilsDrawer();
 
-	app.AddLayout( layMain );
+   	app.AddLayout( layMain );
     //app.AddLayout( layFab );
-	app.AddDrawer( drawerScroll, "Left", drawerWidth );
-	app.AddDrawer( utilsScroll, "Right", utilsWidth );
-
-	app.SetOnShowKeyboard( OnShowKeyBoard );
+    app.AddDrawer( drawerScroll, "Left", drawerWidth );
+    app.AddDrawer( utilsScroll, "Right", utilsWidth );
+    app.SetOnShowKeyboard( OnShowKeyBoard );
 
     app.EnableBackKey( false );
     
@@ -79,7 +83,7 @@ function OnBack() {
     }
 };
 
-function OnShowKeyBoard( p ) {
+function OnShowKeyBoard( p ) {return;
     if( p ) {
         var kbdHeight = app.GetKeyboardHeight() / app.GetScreenHeight();
         layHoriz.SetPosition( 0, 0, 1, 0 );
@@ -188,7 +192,7 @@ function CreateActionBar() {
 
 function CreateBody() {
     bodyHeight = 0.925;
-    layBody = app.CreateTabs("Input,Output", 1, bodyHeight);
+    layBody = _Tabs("Input,Output", 1, bodyHeight);
     layMain.AddChild( layBody );
     layBody.SetPosition( 0, 0.075, 1, bodyHeight );
     layBody.SetBackColor( "#ffffff" );
@@ -301,17 +305,18 @@ function CreateDrawer() {
 	drawerScroll.AddChild( layDrawer );
 	layDrawer.SetOnTouchDown( function () {app.CloseDrawer( "Left" );} );
 
-	layDrawerTop = app.CreateLayout( "Linear", "Left" );
-	layDrawerTop.SetBackground( "Img/PlayRustLang.png" );
-	layDrawerTop.SetSize( drawerWidth );
-	layDrawer.AddChild( layDrawerTop );
+	//layDrawerTop = app.CreateLayout( "Linear", "Left" );
+	//layDrawerTop.SetBackground( "Img/PlayRustLang.png" );
+	//layDrawerTop.SetSize( drawerWidth );
+	//layDrawer.AddChild( layDrawerTop );
 
 	var txtName = app.CreateText( "PlayRustLang", -1, -1, "Bold");
 	txtName.SetMargins( 0.04, 0.01, 0.02, 0.02 );
 	txtName.SetTextColor( "#ffffff" );
 	txtName.SetTextSize( 17 );
 	layDrawer.AddChild( txtName );
-		var layMenu = app.CreateLayout( "Linear", "Left" );
+	
+	var layMenu = app.CreateLayout( "Linear", "Left" );
 	layDrawer.AddChild( layMenu );
 	
     //Add a list to menu layout (with the menu style option).
@@ -361,6 +366,7 @@ function openProvidedCratesList() {
     layMain.SetVisibility( "Hide" );
     layInfo.SetVisibility( "Show" );
     if( txtInfo.GetText().length == 0 ) {
+        app.ShowProgress( "Loading..." );
         try {
             app.HttpRequest(
                 "get",
@@ -374,11 +380,14 @@ function openProvidedCratesList() {
                     } else {};
                     txtInfo.SetBackColor( "#ffffff" );
                     txtInfo.SetText( response );
+                    app.HideProgress();
                 }
             );
         } catch(err) {
+            app.HideProgress();
             alert( "Sorry, information is not available:\n" + err );
         };
+        
     };
 };
 
@@ -386,9 +395,9 @@ function newFileDlg( title, body, type, index ) {
     txtBarTitle.SetText( title );
     var file = APP_PATH + "/" + title;
     var source = app.ReadFile( file );
-    if( source.slice(-3) !== "\n\n\n" ) {
-        source += "\n\n\n";
-    }
+    //if( source.slice(-3) !== "\n\n\n" ) {
+    //    source += "\n\n\n";
+    //}
     txtSourceBuffer.SetText( source );
     app.CloseDrawer( "Left" );
     settings.last = title;
@@ -514,6 +523,21 @@ function CreateUtilsDrawer() {
 	utilsScroll.AddChild( layUtilsDrawer );
 	layUtilsDrawer.SetOnTouchDown( function () {app.CloseDrawer( "Right" );} );
 	
+	layHost = app.CreateLayout( "Linear", "Horizontal,FillXY,Center" );
+	layHost.SetMargins( 0, 0.04, 0, 0.02 );
+	var txtHost = app.CreateText( "Host", 0.25, -1 );
+	layHost.AddChild( txtHost );
+	txtHost.SetFontFile( "Misc/UbuntuMono-B.ttf" );
+	txtHost.SetTextSize( 20, "px" );
+  var host = settings.host_url;
+  var hosts = [PREFIX1, PREFIX2];
+  if(hosts[0] != host) hosts.push(hosts.pop(0));
+	hosts = hosts.join(",");
+	hosts = app.CreateSpinner( hosts, 0.5, -1 );
+	hosts.SetOnChange( function (host) {settings.host_url=host;storeSettings()} );
+	layHost.AddChild( hosts );
+	layUtilsDrawer.AddChild( layHost );
+	
 	layMode = app.CreateLayout( "Linear", "Horizontal,FillXY,Center" );
 	layMode.SetMargins( 0, 0.04, 0, 0.02 );
 	var txtMode = app.CreateText( "Mode", 0.25, -1 );
@@ -579,16 +603,22 @@ function onSourceBufferChange() {
 
 function formatSource() {
     app.Vibrate( "0,100" );
-    var res = format( txtSourceBuffer.GetText());
-    if( !res.success ) {
-        //alert( JSON.stringify(res) );
-        handleProblem( res.stderr );
-    } else {
-        txtSourceBuffer.SetText( res.code + "\n\n\n" );
-    };
+    app.ShowProgress( "Loading..." );
+    format( txtSourceBuffer.GetText(), function(res) {
+        app.HideProgress();
+        if( !res.success ) {
+            handleProblem( res.stderr );
+            layBody.ShowTab("Output");
+        } else {
+            txtSourceBuffer.SetText( res.code + "\n\n\n" );
+        };
+    });
 };
 
 function runSource() {
     app.Vibrate( "0,100" );
+    app.ShowProgress( "Loading..." );
     execute( txtSourceBuffer.GetText(), handleResult );
+    app.HideProgress();
+    layBody.ShowTab("Output");
 };
