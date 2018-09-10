@@ -2,14 +2,14 @@
 //Tabs object.
 function _Tabs( list, width, height, options )
 { 
-	var lst = list.split(",");
-	this.tabs = [];
-	var curTabName = null;
-	
-	//Disable debug during creation.
-	app.SetDebugEnabled( false );
-	
-	//Create main layout.
+    var lst = list.split(",");
+    this.tabs = [];
+    var curTabName = null;
+    
+    //Disable debug during creation.
+    app.SetDebugEnabled( false );
+    
+    //Create main layout.
     this.lay = app.CreateLayout( "Linear", "Vertical" );
     this.lay.SetBackColor("#ffffff");
     this.lay.SetSize( width, height);
@@ -29,28 +29,28 @@ function _Tabs( list, width, height, options )
     //Add a tab.
     this.AddTab = function( name )
     {
-		app.SetDebugEnabled( false );
-		this.layTab = app.CreateLayout( "Linear", "Vertical,VCenter" );
-		this.layTab.SetMargins( 0,0,0.002,0 );
-		this.layTab.SetSize( width/lst.length, 0.05 );
-		this.layTab.SetBackColor( "#ffffff" );
-		this.txtTab = app.CreateText( name, width/lst.length, 0.05, "FillXY,Bold,VCenter" );
+        app.SetDebugEnabled( false );
+        this.layTab = app.CreateLayout( "Linear", "Vertical,VCenter" );
+        this.layTab.SetMargins( 0,0,0.002,0 );
+        this.layTab.SetSize( width/lst.length, 0.05 );
+        this.layTab.SetBackColor( "#ffffff" );
+        this.txtTab = app.CreateText( name, width/lst.length, 0.05, "FillXY,Bold,VCenter" );
           this.txtTab.SetTextSize(20);
-		this.txtTab.SetTextColor( "#ffffff" );
-		this.txtTab.SetBackColor( "#5a0000" );
-		//this.txtTab.SetPadding( 0,0.03,0,0 );
-		this.txtTab.SetOnTouch( _Tabs_OnTouch );
-		this.txtTab.tabs = this; 
-		this.layTab.AddChild( this.txtTab ); 
-		this.layTop.AddChild( this.layTab );
-		
-		//Save array of tab info.
-		this.tabs[name] = { txt:this.txtTab, content:null };
-		
-		//Add tab content layout to body.
-		this.tabs[name].content = app.CreateLayout( "Linear", "fillxy"+options );
-		this.layBody.AddChild( this.tabs[name].content );
-		app.SetDebugEnabled( true );
+        this.txtTab.SetTextColor( "#ffffff" );
+        this.txtTab.SetBackColor( "#5a0000" );
+        //this.txtTab.SetPadding( 0,0.03,0,0 );
+        this.txtTab.SetOnTouch( _Tabs_OnTouch );
+        this.txtTab.tabs = this; 
+        this.layTab.AddChild( this.txtTab ); 
+        this.layTop.AddChild( this.layTab );
+        
+        //Save array of tab info.
+        this.tabs[name] = { txt:this.txtTab, content:null };
+        
+        //Add tab content layout to body.
+        this.tabs[name].content = app.CreateLayout( "Linear", "fillxy"+options );
+        this.layBody.AddChild( this.tabs[name].content );
+        app.SetDebugEnabled( true );
     }
     
     //Set tab change callback.
@@ -65,8 +65,8 @@ function _Tabs( list, width, height, options )
     //Set current tab.
     this.lay.ShowTab = function( name )
     {
-		app.SetDebugEnabled( false );
-		
+        app.SetDebugEnabled( false );
+        
         //Drop out if no change.
         if( curTabName==name ) { app.SetDebugEnabled(true); return; }
         curTabName = name;
@@ -80,9 +80,9 @@ function _Tabs( list, width, height, options )
         for ( var tb in this.parent.tabs ) {
             if( this.parent.tabs[tb] === tab ) continue;
               this.parent.tabs[tb].txt.SetTextColor( "#ff7777" );
-		    this.parent.tabs[tb].content.SetVisibility( "Hide" );
-	    }
-	    //Select chosen tab.
+            this.parent.tabs[tb].content.SetVisibility( "Hide" );
+        }
+        //Select chosen tab.
         tab.content.SetVisibility( "Show" );
         
         app.SetDebugEnabled( true );
@@ -94,14 +94,14 @@ function _Tabs( list, width, height, options )
     
     //Add tabs.
     for( var i=0; i<lst.length; i++ ) {
-		this.AddTab( lst[i] );
-	}
-	
-	//Set default tab.
-	this.lay.ShowTab( lst[0] );
-	
-	//Re-enable debug.
-	app.SetDebugEnabled( true );
+        this.AddTab( lst[i] );
+    }
+    
+    //Set default tab.
+    this.lay.ShowTab( lst[0] );
+    
+    //Re-enable debug.
+    app.SetDebugEnabled( true );
 
     //Return main layout to caller.
     return this.lay;
@@ -112,10 +112,9 @@ function _Tabs_OnTouch( ev )
 {
     if( ev.action=="Down" ) 
     {
-		app.SetDebugEnabled( false );
+        app.SetDebugEnabled( false );
         var txt = ev.source;
         txt.tabs.lay.ShowTab( txt.GetText() );
         app.SetDebugEnabled( true );
     }
 }
-

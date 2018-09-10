@@ -10,12 +10,15 @@ const DEFAULT_SETTINGS = {
     "optimize": 0,
     "mode": "debug",
     "channel": "stable",
-    "server": "https://play.integer32.com/"
+    "backtrace":  false,
+    "edition":    "2015",
+    "host_url": "https://play.rust-lang.org/",
+    "theme": "light"
 };
 
 var SETTINGS_PATH;
 if( app.GetAppPath() == "/Assets" ) {
-    SETTINGS_PATH = "/data/data/ru.org.linux.virtuos86/shared_prefs/Settings.json";
+    SETTINGS_PATH = "/data/data/ru.org.linux.virtuos86.playrustlang/shared_prefs/Settings.json";
 } else {
     SETTINGS_PATH = "Settings.json";
 };
@@ -25,13 +28,14 @@ function log ( string ) {
 };
 
 function loadSettings () {
-	if( !app.FileExists( SETTINGS_PATH ) ) {
-		 app.WriteFile(
+    if( !app.FileExists( SETTINGS_PATH ) ) {
+         app.WriteFile(
             SETTINGS_PATH,
             json( DEFAULT_SETTINGS )
         );
-	};
+    };
     var settings = JSON.parse( app.ReadFile( SETTINGS_PATH ) );
+    if(typeof settings.host_url === "undefined") settings.host_url = DEFAULT_SETTINGS.host_url;
     return settings;
 };
 
@@ -39,4 +43,3 @@ function storeSettings () {
     var s = JSON.parse( json( settings ) );
     app.WriteFile( SETTINGS_PATH, json( s ) );
 };
-

@@ -10,6 +10,7 @@ const APP_NAME = "PlayRustLang";
 var APP_PATH = "/sdcard/" + APP_NAME;
 
 var curFile;
+var CurTab = null;
 
 function json(obj) {
     return JSON.stringify(obj, null, 2);
@@ -31,29 +32,29 @@ function OnStart() {
     if( settings.last ) {
         curFile = settings.last;
     };
-	layMain = app.CreateLayout( "Absolute", "FillXY" );
-	layMain.SetBackColor( "#aa0000" );
-
-    //uix = app.CreateUIExtras();
-    //layFab = app.CreateLayout( "Linear", "FillXY, Bottom, Right, TouchThrough" );
-    //btnRun = uix.CreateFAButton( "[fa-play]" );
-    //btnRun.SetMargins( 0.02, 0.01, 0.02, 0.01 );
-    //btnRun.SetButtonColors( "#db4437", "#c33d32" );
-    //btnRun.SetOnTouch( runSource );
-    //layFab.AddChild( btnRun );
+    layMain = app.CreateLayout( "Absolute", "FillXY" );
+    layMain.SetBackColor( "#aa0000" );
+/*
+    uix = app.CreateUIExtras();
+    layFab = app.CreateLayout( "Linear", "FillXY, Bottom, Right, TouchThrough" );
+    btnRun = uix.CreateFAButton( "[fa-play]" );
+    btnRun.SetMargins( 0.02, 0.01, 0.02, 0.01 );
+    btnRun.SetButtonColors( "#db4437", "#c33d32" );
+    btnRun.SetOnTouch( runSource );
+    layFab.AddChild( btnRun );*/
 
     CreateActionBar();
-	CreateBody();
-	CreateDrawer();
+      CreateBody();
+    setColorTheme(settings.theme);
+      CreateDrawer();
     ShowFiles();
-	CreateUtilsDrawer();
+    CreateUtilsDrawer();
 
-	app.AddLayout( layMain );
-    //app.AddLayout( layFab );
-	app.AddDrawer( drawerScroll, "Left", drawerWidth );
-	app.AddDrawer( utilsScroll, "Right", utilsWidth );
-
-	app.SetOnShowKeyboard( OnShowKeyBoard );
+    app.AddLayout( layMain );
+//    app.AddLayout( layFab );
+    app.AddDrawer( drawerScroll, "Left", drawerWidth );
+    app.AddDrawer( utilsScroll, "Right", utilsWidth );
+    app.SetOnShowKeyboard( OnShowKeyBoard );
 
     app.EnableBackKey( false );
     
@@ -71,20 +72,23 @@ function OnStart() {
 };
    
 function OnBack() {
-    if( layInfo.GetVisibility() == "Show" ) {
-        layInfo.SetVisibility( "Hide" );
-        layMain.SetVisibility( "Show" );
-    } else if( bodyScroll.GetScrollY() > 0 ) {
-        txtOutputBuffer.SetText( "" );
-        bodyScroll.ScrollTo( 0, 0 );
+    if( CurTab == "Output" ) {
+        if(txtOutputBuffer.GetText() != "") {
+            txtOutputBuffer.SetText("");
+        } else {
+            layBody.ShowTab("Input");
+        };
+    } else if( CurTab == "ProvCrates" ) {
+        layInfo.SetVisibility("Hide");
+        layMain.SetVisibility("Show");
     } else {
         var yesNo = app.CreateYesNoDialog( "Exit?" );
-    	yesNo.SetOnTouch( function(result){ if(result=="Yes") app.Exit()} );
-    	yesNo.Show();
+        yesNo.SetOnTouch( function(result){ if(result=="Yes") app.Exit()} );
+        yesNo.Show();
     }
 };
 
-function OnShowKeyBoard( p ) {
+function OnShowKeyBoard( p ) {return;
     if( p ) {
         var kbdHeight = app.GetKeyboardHeight() / app.GetScreenHeight();
         layHoriz.SetPosition( 0, 0, 1, 0 );
@@ -165,6 +169,7 @@ function CreateActionBar() {
     btnRun.SetTextColor( "#eeeeee" );
     btnRun.SetOnTouchUp( runSource );
     btnRun.SetOnLongTouch( function() {app.ShowPopup("Run code")} );
+    
 
     btnFormat = app.CreateText( "[fa-arrows-h]", -1, -1, "FontAwesome" );
     layBarBtns.AddChild( btnFormat );
@@ -191,12 +196,17 @@ function CreateActionBar() {
     utilMenu.SetOnLongTouch( function() {app.ShowPopup("Right drawer")} );
 };
 
+function changeTab(title) {
+    CurTab = title;
+}
+
 function CreateBody() {
     bodyHeight = 0.925;
     layBody = _Tabs("Input,Output", 1, bodyHeight);
     layMain.AddChild( layBody );
     layBody.SetPosition( 0, 0.075, 1, bodyHeight );
     layBody.SetBackColor( "#ffffff" );
+    layBody.OnChange = changeTab;
 
     //edtScroll = app.CreateScroller( 1, bodyHeight );
     //layBody.AddChild( edtScroll );
@@ -244,8 +254,9 @@ function CreateBody() {
     layOutputBuffer = app.CreateLayout( "Linear", 1, -1, "FillXY" );
     outputScroll.AddChild( layOutputBuffer );
     //layOutputBuffer.SetPosition( 0, bodyHeight, 1, bodyHeight );
-    txtOutputBuffer = app.CreateTextEdit( "See an output here!", 1, -1, "Monospace,Multiline,Html,Left" );
+    txtOutputBuffer = app.CreateTextEdit( "", 1, -1, "Monospace,Multiline,Html,Left" );
     layOutputBuffer.AddChild( txtOutputBuffer );
+    txtOutputBuffer.SetHint("See an output here!\n\nPress `Back` key to clear the output buffer.");
     //txtOutputBuffer.SetFontFile( "Misc/UbuntuMono-B.ttf" )
     txtOutputBuffer.SetTextSize( 20 );
     txtOutputBuffer.SetBackColor( "ffffff" );
@@ -299,35 +310,35 @@ function OnDrawer( side, state ) {
 };
 
 function CreateDrawer() {
-	drawerWidth = 0.75;
+    drawerWidth = 0.75;
     drawerScroll = app.CreateScroller( drawerWidth, 1 );
     drawerScroll.SetBackColor( "#993000" );
-	layDrawer = app.CreateLayout( "Linear", "Left" );
-	drawerScroll.AddChild( layDrawer );
-	layDrawer.SetOnTouchDown( function () {app.CloseDrawer( "Left" );} );
+    layDrawer = app.CreateLayout( "Linear", "Left" );
+    drawerScroll.AddChild( layDrawer );
+    layDrawer.SetOnTouchDown( function () {app.CloseDrawer( "Left" );} );
 
-	//layDrawerTop = app.CreateLayout( "Linear", "Left" );
-	//layDrawerTop.SetBackground( "Img/PlayRustLang.png" );
-	//layDrawerTop.SetSize( drawerWidth );
-	//layDrawer.AddChild( layDrawerTop );
+    //layDrawerTop = app.CreateLayout( "Linear", "Left" );
+    //layDrawerTop.SetBackground( "Img/PlayRustLang.png" );
+    //layDrawerTop.SetSize( drawerWidth );
+    //layDrawer.AddChild( layDrawerTop );
 
-	var txtName = app.CreateText( "PlayRustLang", -1, -1, "Bold");
-	txtName.SetMargins( 0.04, 0.01, 0.02, 0.02 );
-	txtName.SetTextColor( "#ffffff" );
-	txtName.SetTextSize( 17 );
-	layDrawer.AddChild( txtName );
-	
-	var layMenu = app.CreateLayout( "Linear", "Left" );
-	layDrawer.AddChild( layMenu );
-	
+    var txtName = app.CreateText( "PlayRustLang", -1, -1, "Bold");
+    txtName.SetMargins( 0.04, 0.01, 0.02, 0.02 );
+    txtName.SetTextColor( "#ffffff" );
+    txtName.SetTextSize( 17 );
+    layDrawer.AddChild( txtName );
+    
+    var layMenu = app.CreateLayout( "Linear", "Left" );
+    layDrawer.AddChild( layMenu );
+    
     //Add a list to menu layout (with the menu style option).
-    var listItems = "Start::[fa-home],About::[fa-question-circle],Provided crates::[fa-list],New File::[fa-plus]";
+    var listItems = "Provided crates::[fa-list],New File::[fa-plus]";
     lstMenuMain = app.CreateList( listItems, drawerWidth, -1, "Menu,Expand" );
     lstMenuMain.SetTextColor( "#ffcccc" );
     lstMenuMain.SetHiTextColor1("#00ff00");
     lstMenuMain.SetColumnWidths( -1, 0.35, 0.18 );
     lstMenuMain.SelectItemByIndex( 0, true );
-    lstMenuMain.SetItemByIndex( 0, "Start" );
+    lstMenuMain.SetItemByIndex( 0, "Provided crates" );
     lstMenuMain.SetOnTouch( lstMenu_OnTouch );
     layMenu.AddChild( lstMenuMain );
     curMenuList = lstMenuMain;
@@ -335,12 +346,12 @@ function CreateDrawer() {
     layMenu.AddChild( CreateSep( drawerWidth ) );
     
     //Add title between menus.
-	txtTitle = app.CreateText( "Files",-1,-1,"Left");
-	txtTitle.SetTextColor( "#666666" );
-	txtTitle.SetMargins( 16,12,0,0, "dip" );
-	txtTitle.SetTextSize( 14, "dip" );
-	layMenu.AddChild( txtTitle );
-	
+    txtTitle = app.CreateText( "Files",-1,-1,"Left");
+    txtTitle.SetTextColor( "#666666" );
+    txtTitle.SetMargins( 16,12,0,0, "dip" );
+    txtTitle.SetTextSize( 14, "dip" );
+    layMenu.AddChild( txtTitle );
+    
     //Add a second list to menu layout.
     lstMenuFiles = app.CreateList( "", drawerWidth,-1, "Menu,Expand" );
     lstMenuFiles.SetColumnWidths( -1, 0.35, 0.18 );
@@ -366,6 +377,7 @@ function lstMenu_OnTouch( title, body, type, index ) {
 function openProvidedCratesList() {
     layMain.SetVisibility( "Hide" );
     layInfo.SetVisibility( "Show" );
+    CurTab = "ProvCrates";
     if( txtInfo.GetText().length == 0 ) {
         app.ShowProgress( "Loading..." );
         try {
@@ -396,9 +408,9 @@ function newFileDlg( title, body, type, index ) {
     txtBarTitle.SetText( title );
     var file = APP_PATH + "/" + title;
     var source = app.ReadFile( file );
-    if( source.slice(-3) !== "\n\n\n" ) {
-        source += "\n\n\n";
-    }
+    //if( source.slice(-3) !== "\n\n\n" ) {
+    //    source += "\n\n\n";
+    //}
     txtSourceBuffer.SetText( source );
     app.CloseDrawer( "Left" );
     settings.last = title;
@@ -448,12 +460,12 @@ function yesNoDelete_OnTouch( result ) {alert("Unimplemented!");return;
 //Called after user enters renamed program.
 function OnRename( name ) {
     //Check up name.
-	if( !isValidFileName( name ) ) {
-		alert( "Name contains invalid characters!" );
-		app.ShowTextDialog( "Rename Program", curFile, OnRename );
-		return;
-	};
-	
+    if( !isValidFileName( name ) ) {
+        alert( "Name contains invalid characters!" );
+        app.ShowTextDialog( "Rename Program", curFile, OnRename );
+        return;
+    };
+    
     //Check if already exists.
     var newfile = APP_PATH + "/" + name;
     if( app.FileExists( newfile ) ) {
@@ -468,12 +480,12 @@ function OnRename( name ) {
 
 //Called after user enters new file name.
 function OnAdd( name, type ) {
-	//Check up name.
-	if( !isValidFileName( name ) ) {
-		alert( "Name contains invalid characters!" );
-		app.ShowTextDialog( "File Name", "", OnAdd );
-		return;
-	};
+    //Check up name.
+    if( !isValidFileName( name ) ) {
+        alert( "Name contains invalid characters!" );
+        app.ShowTextDialog( "File Name", "", OnAdd );
+        return;
+    };
     var file = APP_PATH + "/" + name + ".rs";
     if( app.FileExists( file ) ) {
         app.Alert( "File already exists!" );
@@ -517,64 +529,147 @@ function ShowFiles() {
 ////////////////////////////////////////////////////////////////////////////////
 
 function CreateUtilsDrawer() {
-	utilsWidth = 0.75;
+    utilsWidth = 0.75;
     utilsScroll = app.CreateScroller( utilsWidth, 1 );
     utilsScroll.SetBackColor( "#993000" );
-	layUtilsDrawer = app.CreateLayout( "Linear", "Bottom,Center" );
-	utilsScroll.AddChild( layUtilsDrawer );
-	layUtilsDrawer.SetOnTouchDown( function () {app.CloseDrawer( "Right" );} );
-	
-	layMode = app.CreateLayout( "Linear", "Horizontal,FillXY,Center" );
-	layMode.SetMargins( 0, 0.04, 0, 0.02 );
-	var txtMode = app.CreateText( "Mode", 0.25, -1 );
-	layMode.AddChild( txtMode );
-	txtMode.SetFontFile( "Misc/UbuntuMono-B.ttf" );
-	txtMode.SetTextSize( 20, "px" );
-	if( settings.mode == "debug" ) {
-	    var modes = "debug,release";
+    layUtilsDrawer = app.CreateLayout( "Linear", "Bottom,Center" );
+    utilsScroll.AddChild( layUtilsDrawer );
+    layUtilsDrawer.SetOnTouchDown( function () {app.CloseDrawer( "Right" );} );
+    
+    layHost = app.CreateLayout( "Linear", "Horizontal,FillXY,Center" );
+    layHost.SetMargins( 0, 0.04, 0, 0.02 );
+    var txtHost = app.CreateText( "Host", 0.25, -1 );
+    layHost.AddChild( txtHost );
+    txtHost.SetFontFile( "Misc/UbuntuMono-B.ttf" );
+    txtHost.SetTextSize( 20, "px" );
+    var host = settings.host_url;
+    var hosts = [PREFIX1, PREFIX2];
+    if(hosts[0] != host) hosts.push(hosts.pop(0));
+    hosts = hosts.join(",");
+    hosts = app.CreateSpinner( hosts, 0.5, -1 );
+    hosts.SetOnChange( function (host) {settings.host_url=host;storeSettings();} );
+    layHost.AddChild( hosts );
+    layUtilsDrawer.AddChild( layHost );
+    
+    layMode = app.CreateLayout( "Linear", "Horizontal,FillXY,Center" );
+    layMode.SetMargins( 0, 0, 0, 0.02 );
+    var txtMode = app.CreateText( "Mode", 0.25, -1 );
+    layMode.AddChild( txtMode );
+    txtMode.SetFontFile( "Misc/UbuntuMono-B.ttf" );
+    txtMode.SetTextSize( 20, "px" );
+    if( settings.mode == "debug" ) {
+        var modes = "debug,release";
     } else if( settings.mode == "release" ) {
-	    var modes = "release,debug";
+        var modes = "release,debug";
     } else {alert("Invalid value of the parameter `mode` in Settings: " + settings.mode + "!");};
-	modes = app.CreateSpinner( modes, 0.5, -1 );
-	modes.SetOnChange( function (mode) {settings.mode=mode;storeSettings()} );
-	//modes.SelectItem( "debug" );
-	layMode.AddChild( modes );
-	layUtilsDrawer.AddChild( layMode );
-	
-	layChannel = app.CreateLayout( "Linear", "Horizontal,FillXY,Center" );
-	layChannel.SetMargins( 0, 0, 0, 0.02 );
-	var txtChannel = app.CreateText( "Channel", 0.25, -1 );
-	layChannel.AddChild( txtChannel );
-	txtChannel.SetFontFile( "Misc/UbuntuMono-B.ttf" );
-	txtChannel.SetTextSize( 20, "px" );
-	if( settings.channel == "stable" ) {
-	    var channels = "stable,beta,nightly";
-	} else if( settings.channel == "beta" ) {
-	    var channels = "beta,stable,nightly";
-	} else if( settings.channel == "nightly" ) {
-	    var channels = "nightly,stable,beta";
-	} else {alert("Invalid value of the parameter `channel` in Settings: " + settings.channel + "!");};
-	channels = app.CreateSpinner( channels, 0.5, -1 );
-	channels.SetOnChange( function (channel) {settings.channel=channel;storeSettings()} );
-	//channels.SelectItem( "stable" );
-	layChannel.AddChild( channels );
-	layUtilsDrawer.AddChild( layChannel );
-	
-	layUtilsDrawer.AddChild( CreateSep( utilsWidth ) );
-	
-	layTargetBtns = app.CreateLayout( "Linear", "Horizontal,FillXY,Center" );
-	layUtilsDrawer.AddChild( layTargetBtns );
-	layTargetBtns.SetMargins( 0, 0.01, 0, 0.01 );
-	var targets = ["ASM","LLVM IR","MIR"];
-	var colours = ["#990000","#009900","#000099"];
-	for( var i in targets ) {
-	    var btn = app.CreateButton( targets[i], 0.25, -1, "Custom" );
-	    btn.SetStyle( colours[i], colours[i], 2 );
-	    btn.SetOnTouch( function () {app.CloseDrawer( "Right" );} );
-	    layTargetBtns.AddChild( btn );
-	};
-	layUtilsDrawer.AddChild( CreateSep( utilsWidth ) );
+    modes = app.CreateSpinner( modes, 0.5, -1 );
+    modes.SetOnChange( function (mode) {settings.mode=mode;storeSettings();} );
+    //modes.SelectItem( "debug" );
+    layMode.AddChild( modes );
+    layUtilsDrawer.AddChild( layMode );
+    
+    layChannel = app.CreateLayout( "Linear", "Horizontal,FillXY,Center" );
+    layChannel.SetMargins( 0, 0, 0, 0.02 );
+    var txtChannel = app.CreateText( "Channel", 0.25, -1 );
+    layChannel.AddChild( txtChannel );
+    txtChannel.SetFontFile( "Misc/UbuntuMono-B.ttf" );
+    txtChannel.SetTextSize( 20, "px" );
+    if( settings.channel == "stable" ) {
+        var channels = "stable,beta,nightly";
+    } else if( settings.channel == "beta" ) {
+        var channels = "beta,stable,nightly";
+    } else if( settings.channel == "nightly" ) {
+        var channels = "nightly,stable,beta";
+    } else {alert("Invalid value of the parameter `channel` in Settings: " + settings.channel + "!");};
+    channels = app.CreateSpinner( channels, 0.5, -1 );
+    channels.SetOnChange( function (channel) {settings.channel=channel;storeSettings();} );
+    //channels.SelectItem( "stable" );
+    layChannel.AddChild( channels );
+    layUtilsDrawer.AddChild( layChannel );
+    
+    layBacktrace = app.CreateLayout( "Linear", "Horizontal,FillXY,Center" );
+    layBacktrace.SetMargins( 0, 0, 0, 0.02 );
+    var txtVar = app.CreateText( "Backtrace", 0.25, -1 );
+    layBacktrace.AddChild( txtVar );
+    txtVar.SetFontFile( "Misc/UbuntuMono-B.ttf" );
+    txtVar.SetTextSize( 20, "px" );
+    if( settings.backtrace == false ) {
+        var vars = "no,yes";
+    } else if( settings.backtrace == true ) {
+        var vars = "yes,no";
+    } else {alert("Invalid value of the parameter `backtrace` in Settings: " + settings.backtrace + "!");};
+    vars = app.CreateSpinner( vars, 0.5, -1 );
+    vars.SetOnChange( function (var_) {settings.backtrace=(var_ === "yes" ? true : false );storeSettings();} );
+    //vars.SelectItem( true );
+    layBacktrace.AddChild( vars );
+    layUtilsDrawer.AddChild( layBacktrace );
+    
+    layEdition = app.CreateLayout( "Linear", "Horizontal,FillXY,Center" );
+    layEdition.SetMargins( 0, 0, 0, 0.02 );
+    var txtEdition = app.CreateText( "Edition", 0.25, -1 );
+    layEdition.AddChild( txtEdition );
+    txtEdition.SetFontFile( "Misc/UbuntuMono-B.ttf" );
+    txtEdition.SetTextSize( 20, "px" );
+    if( settings.edition == "2015" ) {
+        var editions = "2015,2018";
+    } else if( settings.edition == "2018" ) {
+        var editions = "2018,2015";
+    } else {alert("Invalid value of the parameter `edition` in Settings: " + settings.edition + "!");};
+    editions = app.CreateSpinner( editions, 0.5, -1 );
+    editions.SetOnChange( function (edition) {settings.edition=edition;storeSettings();} );
+    //editions.SelectItem( "2015" );
+    layEdition.AddChild( editions );
+    layUtilsDrawer.AddChild( layEdition );
+    
+    layUtilsDrawer.AddChild( CreateSep( utilsWidth ) );
+    
+    layTargetBtns = app.CreateLayout( "Linear", "Horizontal,FillXY,Center" );
+    layUtilsDrawer.AddChild( layTargetBtns );
+    layTargetBtns.SetMargins( 0, 0.01, 0, 0.01 );
+    var targets = ["ASM","LLVM IR","MIR"];
+    var colours = ["#990000","#009900","#000099"];
+    for( var i in targets ) {
+        var btn = app.CreateButton( targets[i], 0.25, -1, "Custom" );
+        btn.SetStyle( colours[i], colours[i], 2 );
+        btn.SetOnTouch( function () {app.CloseDrawer( "Right" );} );
+        layTargetBtns.AddChild( btn );
+    };
+    layUtilsDrawer.AddChild( CreateSep( utilsWidth ) );
+    
+    layTheme = app.CreateLayout( "Linear", "Horizontal,FillXY,Center" );
+    layTheme.SetMargins( 0, 0, 0, 0.02 );
+    var txtTheme = app.CreateText( "Theme", 0.25, -1 );
+    layTheme.AddChild( txtTheme );
+    txtTheme.SetFontFile( "Misc/UbuntuMono-B.ttf" );
+    txtTheme.SetTextSize( 20, "px" );
+    if( settings.theme == "light" ) {
+        var theme = "light,dark";
+    } else if( settings.theme == "dark" ) {
+        var theme = "dark,light";
+    } else {alert("Invalid value of the parameter `theme` in Settings: " + settings.theme + "!");};
+    theme = app.CreateSpinner( theme, 0.5, -1 );
+    theme.SetOnChange( function (theme) {settings.theme=theme;storeSettings();setColorTheme(theme);} );
+    layTheme.AddChild( theme );
+    layUtilsDrawer.AddChild( layTheme );
 };
+
+function setColorTheme(theme) {
+  if (theme == "light") {
+    txtSourceBuffer.SetTextColor("#aa0000");
+    txtSourceBuffer.SetBackColor("#ffffff");
+    input.SetBackColor("#ffffff");
+    txtOutputBuffer.SetTextColor( "#000000" );
+    txtOutputBuffer.SetBackColor("#ffffff");
+    output.SetBackColor("#ffffff");
+  } else {
+    txtSourceBuffer.SetTextColor("#ffffff");
+    txtSourceBuffer.SetBackColor("#000000");
+    input.SetBackColor("#000000");
+    txtOutputBuffer.SetTextColor( "#ffffff" );
+    txtOutputBuffer.SetBackColor("#000000");
+    output.SetBackColor("#000000");
+  }
+}
 
 function onSourceBufferChange() {
     var curPos = txtSourceBuffer.GetCursorPos();
@@ -590,20 +685,20 @@ function onSourceBufferChange() {
 function formatSource() {
     app.Vibrate( "0,100" );
     app.ShowProgress( "Loading..." );
-    var res = format( txtSourceBuffer.GetText());
-    app.HideProgress();
-    if( !res.success ) {
-        handleProblem( res.stderr );
-        layBody.ShowTab("Output");
-    } else {
-        txtSourceBuffer.SetText( res.code + "\n\n\n" );
-    };
+    format( txtSourceBuffer.GetText(), function(res) {
+        app.HideProgress();
+        if( !res.success ) {
+            handleProblem( res.stderr );
+            layBody.ShowTab("Output");
+        } else {
+            txtSourceBuffer.SetText( res.code + "\n\n\n" );
+        };
+    });
 };
 
 function runSource() {
     app.Vibrate( "0,100" );
     app.ShowProgress( "Loading..." );
     execute( txtSourceBuffer.GetText(), handleResult );
-    app.HideProgress();
     layBody.ShowTab("Output");
 };
