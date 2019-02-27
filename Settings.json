@@ -1,0 +1,11 @@
+{
+  "last": "hello_world.rs",
+  "version": "beta",
+  "optimize": 0,
+  "mode": "release",
+  "channel": "stable",
+  "backtrace": false,
+  "edition": "2018",
+  "host_url": "https://play.rust-lang.org/",
+  "theme": "dark"
+}

@@ -18,7 +18,7 @@ const DEFAULT_SETTINGS = {
 
 var SETTINGS_PATH;
 if( app.GetAppPath() == "/Assets" ) {
-    SETTINGS_PATH = "/data/data/ru.org.linux.virtuos86.playrustlang/shared_prefs/Settings.json";
+    SETTINGS_PATH = "/data/data/ru.virtuos86.playrustlang/shared_prefs/Settings.json";
 } else {
     SETTINGS_PATH = "Settings.json";
 };

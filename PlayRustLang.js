@@ -1,10 +1,9 @@
 //"use strict";
 
 //app.LoadPlugin( "UIExtras" );
-
-app.LoadScript( "tabs.js" );
-app.LoadScript( "File-IO.js" );
-app.LoadScript( "Net-IO.js" );
+eval(app.ReadFile( "tabs.js" ));
+eval(app.ReadFile( "File-IO.js" ));
+eval(app.ReadFile( "Net-IO.js" ));
 
 const APP_NAME = "PlayRustLang";
 var APP_PATH = "/sdcard/" + APP_NAME;
@@ -449,7 +448,7 @@ function lstOps_Select( item ) {
 };
 
 //Handle delete 'are you sure' dialog.
-function yesNoDelete_OnTouch( result ) {alert("Unimplemented!");return;
+function yesNoDelete_OnTouch( result ) {
     if( result == "Yes" ) {
         //Delete the file and refresh list.
         app.DeleteFolder( APP_PATH + "/" + curFile );
@@ -534,7 +533,7 @@ function CreateUtilsDrawer() {
     utilsScroll.SetBackColor( "#993000" );
     layUtilsDrawer = app.CreateLayout( "Linear", "Bottom,Center" );
     utilsScroll.AddChild( layUtilsDrawer );
-    layUtilsDrawer.SetOnTouchDown( function () {app.CloseDrawer( "Right" );} );
+    layUtilsDrawer.SetOnTouchDown( function () { app.CloseDrawer( "Right" ); } );
     
     layHost = app.CreateLayout( "Linear", "Horizontal,FillXY,Center" );
     layHost.SetMargins( 0, 0.04, 0, 0.02 );

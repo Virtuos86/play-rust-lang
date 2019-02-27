@@ -16,9 +16,9 @@ const WARNING = 1 + ERROR;
 
 const PREFIX1 = "https://play.integer32.com";
 const PREFIX2 = "https://play.rust-lang.org";
-const EXECUTE_POSTFIX = "/execute";
-const FORMAT_POSTFIX = "/format";
-const GIST_URL_POSTFIX = "/meta/gist/";//"https://api.github.com/gists";
+const EXECUTE_POSTFIX = "execute";
+const FORMAT_POSTFIX = "format";
+const GIST_URL_POSTFIX = "meta/gist/";//"https://api.github.com/gists";
 
 // Regex for finding new lines
 const newLineRegex = /(?:\r\n|\r|\n)/g;
@@ -70,11 +70,11 @@ function clearResultDiv() {
 
 function processRes(err, res, callback) {
     app.HideProgress();
-    //alert(res);
     if(err) {
         alert(`Error: {res}`);
         return;
     };
+    console.log(res);
     var result = JSON.parse(res);
     // handle application errors from playpen
     if( !result.success ) {
@@ -101,11 +101,11 @@ function execute( program, callback ) {
     data.code = program;
     if(settings.channel != "nightly") delete data.edition;
     data = JSON.stringify(data);
-    app.HttpRequest( "json", settings.host_url, EXECUTE_POSTFIX, data, (err, res) => { processRes(err, res, callback) }, "content-type=application/json;charset=utf-8");
+    app.HttpRequest( "json", settings.host_url, EXECUTE_POSTFIX, data, function(err, res) { processRes(err, res, callback); }, "content-type=application/json;charset=utf-8");
 }
 
 // The callback to execute
-async function handleResult( statusCode, message ) {//alert("result: "+statusCode+message);
+function handleResult( statusCode, message ) {//alert("result: "+statusCode+message);
     // Dispatch depending on result type
     if (message == null) {
         clearResultDiv();
@@ -205,7 +205,7 @@ function parseProblems( lines ) {
 
 // Display an output message and a link to the Rust playground
 function displayOutput( message, program ) {
-    worker = (err, res) => {
+    worker = function(err, res) {
         bodyScroll.ScrollTo( 0, bodyHeight );
         if( err ) {
             alert(err);
